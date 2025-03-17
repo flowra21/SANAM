@@ -1,586 +1,234 @@
-//import SpriteKit
-//
-//class GameScene: SKScene, SKPhysicsContactDelegate {
-//    var player: SKSpriteNode!
-//
-//    override func didMove(to view: SKView) {
-//        // تعيين مندوب الفيزياء
-//        physicsWorld.contactDelegate = self
-//
-//        // البحث عن اللاعب في المشهد
-//        player = childNode(withName: "player") as? SKSpriteNode
-//        
-//        // التأكد أن اللاعب موجود
-//        guard let player = player else { return }
-//
-//        // ضبط الفيزياء للاعب
-//        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
-//        player.physicsBody?.affectedByGravity = true
-//        player.physicsBody?.allowsRotation = false
-//        player.physicsBody?.categoryBitMask = 1
-//        player.physicsBody?.contactTestBitMask = 2 // يتفاعل مع العشب والحجارة
-//        player.physicsBody?.collisionBitMask = 2 // يصطدم بالعوائق
-//
-//        // إعداد العوائق (العشب والحجارة)
-//        enumerateChildNodes(withName: "obstacle") { node, _ in
-//            if let obstacle = node as? SKSpriteNode {
-//                obstacle.physicsBody = SKPhysicsBody(rectangleOf: obstacle.size)
-//                obstacle.physicsBody?.isDynamic = false // يجعلها ثابتة
-//                obstacle.physicsBody?.categoryBitMask = 2 // تعريفها كعوائق
-//            }
-//        }
-//
-//        // حركة اللاعب التلقائية ذهابًا وإيابًا
-//        let moveRight = SKAction.moveBy(x: 500, y: 0, duration: 5)
-//        let sequence = SKAction.sequence([moveRight])
-//        let repeatForever = SKAction.repeatForever(sequence)
-//        player.run(repeatForever)
-//    }
-//    
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let player = player else { return }
-//        if player.physicsBody?.velocity.dy == 0 {
-//            player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 380))
-//        }
-//    }
-//
-//    // تنفيذ حدث عند التصادم
-//    func didBegin(_ contact: SKPhysicsContact) {
-//        let bodyA = contact.bodyA
-//        let bodyB = contact.bodyB
-//        
-//        if (bodyA.categoryBitMask == 1 && bodyB.categoryBitMask == 2) ||
-//           (bodyA.categoryBitMask == 2 && bodyB.categoryBitMask == 1) {
-//            gameOver() // إنهاء اللعبة عند التصادم
-//        }
-//    }
-//
-//    func gameOver() {
-//        player.removeAllActions() // إيقاف حركة اللاعب
-//        player.physicsBody?.velocity = CGVector(dx: 0, dy: 0) // إيقافه تمامًا
-//        print("Game Over!") // يمكنك استبداله بشاشة نهاية اللعبة
-//    }
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-//
-//
-//import SpriteKit
-//
-//class GameScene: SKScene, SKPhysicsContactDelegate {
-//    
-//    var player: SKSpriteNode!
-//    var cameraNode: SKCameraNode!
-//    var obstacles: [SKSpriteNode] = []
-//    
-//    let playerCategory: UInt32 = 0x1 << 0
-//    let obstacleCategory: UInt32 = 0x1 << 1
-//    
-//    override func didMove(to view: SKView) {
-//        // البحث عن اللاعب والعقبات الموجودة في `GameScene.sks`
-//        player = childNode(withName: "player") as? SKSpriteNode
-//        obstacles = self.children.compactMap { $0 as? SKSpriteNode }.filter { $0.name == "grass" || $0.name == "rock" }
-//        
-//        guard let player = player else { return }
-//        
-//        // إعداد الفيزياء
-//        physicsWorld.contactDelegate = self
-//        
-//        // إعداد اللاعب
-//        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
-//        player.physicsBody?.affectedByGravity = true
-//        player.physicsBody?.allowsRotation = false
-//        player.physicsBody?.categoryBitMask = playerCategory
-//        player.physicsBody?.contactTestBitMask = obstacleCategory
-//        player.physicsBody?.collisionBitMask = obstacleCategory
-//        
-//        // جعل العقبات غير متحركة ولكن لها فيزياء
-//        for obstacle in obstacles {
-//            obstacle.physicsBody = SKPhysicsBody(rectangleOf: obstacle.size)
-//            obstacle.physicsBody?.isDynamic = false
-//            obstacle.physicsBody?.categoryBitMask = obstacleCategory
-//        }
-//        
-//        // حركة اللاعب المستمرة للأمام
-//        let moveForward = SKAction.moveBy(x: 500, y: 0, duration: 5)
-//        let repeatForever = SKAction.repeatForever(moveForward)
-//        player.run(repeatForever)
-//        
-//        // إضافة كاميرا تتبع اللاعب
-//        cameraNode = SKCameraNode()
-//        camera = cameraNode
-//        addChild(cameraNode)
-//    }
-//    
-//    override func update(_ currentTime: TimeInterval) {
-//        // جعل الكاميرا تتبع اللاعب
-//        cameraNode.position = CGPoint(x: player.position.x + 200, y: 0)
-//        
-//        // تحديث مواقع العقبات لإعادة استخدامها
-//        for obstacle in obstacles {
-//            if obstacle.position.x < player.position.x - 600 { // إذا خرجت من الشاشة
-//                repositionObstacle(obstacle)
-//            }
-//        }
-//    }
-//
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let player = player else { return }
-//        
-//        // السماح بالقفز فقط إذا كان على الأرض
-//        if player.physicsBody?.velocity.dy == 0 {
-//            player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 300)) // قفزة أعلى
-//        }
-//    }
-//    
-//    func repositionObstacle(_ obstacle: SKSpriteNode) {
-//        let newX = player.position.x + CGFloat.random(in: 600...1000) // وضعها بعيدًا أمام اللاعب
-//        obstacle.position.x = newX
-//    }
-//    
-//    func didBegin(_ contact: SKPhysicsContact) {
-//        if (contact.bodyA.categoryBitMask == playerCategory && contact.bodyB.categoryBitMask == obstacleCategory) ||
-//           (contact.bodyB.categoryBitMask == playerCategory && contact.bodyA.categoryBitMask == obstacleCategory) {
-//            gameOver()
-//        }
-//    }
-//    
-//    func gameOver() {
-//        print("💀 اللاعب مات!")
-//        player.removeAllActions()
-//        player.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-//    }
-//}
-
-
-
-
-
-//
-//
-//import SpriteKit
-//
-//class GameScene: SKScene, SKPhysicsContactDelegate {
-//    
-//    var player: SKSpriteNode!
-//    var cameraNode: SKCameraNode!
-//    var obstacles: [SKSpriteNode] = []
-//    var groundNodes: [SKSpriteNode] = []
-//    
-//    let playerCategory: UInt32 = 0x1 << 0
-//    let obstacleCategory: UInt32 = 0x1 << 1
-//    let groundCategory: UInt32 = 0x1 << 2
-//    
-//    override func didMove(to view: SKView) {
-//        // البحث عن اللاعب
-//        player = childNode(withName: "player") as? SKSpriteNode
-//        guard let player = player else { return }
-//        
-//        // إعداد الفيزياء
-//        physicsWorld.contactDelegate = self
-//        
-//        // إعداد اللاعب
-//        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
-//        player.physicsBody?.affectedByGravity = true
-//        player.physicsBody?.allowsRotation = false
-//        player.physicsBody?.categoryBitMask = playerCategory
-//        player.physicsBody?.contactTestBitMask = obstacleCategory | groundCategory
-//        player.physicsBody?.collisionBitMask = obstacleCategory | groundCategory
-//        
-//        // إعداد الأرضية المتكررة
-//        setupGround()
-//        
-//        // إعداد العقبات
-//        obstacles = self.children.compactMap { $0 as? SKSpriteNode }.filter { $0.name == "grass" || $0.name == "rock" }
-//        for obstacle in obstacles {
-//            obstacle.physicsBody = SKPhysicsBody(rectangleOf: obstacle.size)
-//            obstacle.physicsBody?.isDynamic = false
-//            obstacle.physicsBody?.categoryBitMask = obstacleCategory
-//        }
-//        
-//        // حركة اللاعب المستمرة للأمام
-//        let moveForward = SKAction.moveBy(x: 500, y: 0, duration: 5)
-//        let repeatForever = SKAction.repeatForever(moveForward)
-//        player.run(repeatForever)
-//        
-//        // إضافة كاميرا تتبع اللاعب
-//        cameraNode = SKCameraNode()
-//        camera = cameraNode
-//        addChild(cameraNode)
-//    }
-//    
-//    func setupGround() {
-//        // إيجاد الأرضية الأصلية
-//        if let ground = childNode(withName: "ground") as? SKSpriteNode {
-//            groundNodes.append(ground)
-//            
-//            // إنشاء نسخ إضافية للأرضية لضمان التكرار
-//            for i in 1...2 {
-//                let newGround = ground.copy() as! SKSpriteNode
-//                newGround.position.x = ground.position.x + ground.size.width * CGFloat(i)
-//                addChild(newGround)
-//                groundNodes.append(newGround)
-//            }
-//            
-//            // إضافة فيزياء للأرضية
-//            for ground in groundNodes {
-//                ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
-//                ground.physicsBody?.isDynamic = false
-//                ground.physicsBody?.categoryBitMask = groundCategory
-//            }
-//        }
-//    }
-//    
-//    override func update(_ currentTime: TimeInterval) {
-//        // جعل الكاميرا تتبع اللاعب
-//        cameraNode.position = CGPoint(x: player.position.x + 200, y: 0)
-//        
-//        // تحديث الأرضية لإبقائها متكررة
-//        for ground in groundNodes {
-//            if ground.position.x < player.position.x - ground.size.width {
-//                ground.position.x += ground.size.width * CGFloat(groundNodes.count)
-//            }
-//        }
-//        
-//        // تحديث مواقع العقبات لإعادة استخدامها
-//        for obstacle in obstacles {
-//            if obstacle.position.x < player.position.x - 600 {
-//                repositionObstacle(obstacle)
-//            }
-//        }
-//    }
-//
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let player = player else { return }
-//        
-//        // السماح بالقفز فقط إذا كان على الأرض
-//        if player.physicsBody?.velocity.dy == 0 {
-//            player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 350))
-//        }
-//    }
-//    
-//    func repositionObstacle(_ obstacle: SKSpriteNode) {
-//        let newX = player.position.x + CGFloat.random(in: 600...1000)
-//        obstacle.position.x = newX
-//    }
-//    
-//    func didBegin(_ contact: SKPhysicsContact) {
-//        if (contact.bodyA.categoryBitMask == playerCategory && contact.bodyB.categoryBitMask == obstacleCategory) ||
-//           (contact.bodyB.categoryBitMask == playerCategory && contact.bodyA.categoryBitMask == obstacleCategory) {
-//            gameOver()
-//        }
-//    }
-//    
-//    func gameOver() {
-//        print("💀 اللاعب مات!")
-//        player.removeAllActions()
-//        player.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-//    }
-//}
-//
-//
-//
-//
-//
-//
-////walk
-//
-//import SpriteKit
-//
-//class GameScene: SKScene, SKPhysicsContactDelegate {
-//    
-//    var player: SKSpriteNode!
-//    var cameraNode: SKCameraNode!
-//    var obstacles: [SKSpriteNode] = []
-//    var groundNodes: [SKSpriteNode] = []
-//    
-//    let playerCategory: UInt32 = 0x1 << 0
-//    let obstacleCategory: UInt32 = 0x1 << 1
-//    let groundCategory: UInt32 = 0x1 << 2
-//    
-//    override func didMove(to view: SKView) {
-//        setupPhysics()
-//        setupPlayer()
-//        setupGround()
-//        setupObstacles()
-//        setupCamera()
-//    }
-//    
-//    func setupPhysics() {
-//        physicsWorld.contactDelegate = self
-//    }
-//    
-//    func setupPlayer() {
-//        guard let player = childNode(withName: "player") as? SKSpriteNode else { return }
-//        self.player = player
-//        
-//        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
-//        player.physicsBody?.affectedByGravity = true
-//        player.physicsBody?.allowsRotation = false
-//        player.physicsBody?.categoryBitMask = playerCategory
-//        player.physicsBody?.contactTestBitMask = obstacleCategory | groundCategory
-//        player.physicsBody?.collisionBitMask = obstacleCategory | groundCategory
-//        
-//        let moveForward = SKAction.moveBy(x: 500, y: 0, duration: 5)
-//        player.run(SKAction.repeatForever(moveForward))
-//    }
-//    
-//    func setupGround() {
-//        if let ground = childNode(withName: "ground") as? SKSpriteNode {
-//            groundNodes.append(ground)
-//            for i in 1...2 {
-//                let newGround = ground.copy() as! SKSpriteNode
-//                newGround.position.x = ground.position.x + ground.size.width * CGFloat(i)
-//                addChild(newGround)
-//                groundNodes.append(newGround)
-//            }
-//            
-//            for ground in groundNodes {
-//                ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
-//                ground.physicsBody?.isDynamic = false
-//                ground.physicsBody?.categoryBitMask = groundCategory
-//            }
-//        }
-//    }
-//    
-//    func setupObstacles() {
-//        obstacles = self.children.compactMap { $0 as? SKSpriteNode }.filter { $0.name == "grass" || $0.name == "rock" }
-//        for obstacle in obstacles {
-//            obstacle.physicsBody = SKPhysicsBody(rectangleOf: obstacle.size)
-//            obstacle.physicsBody?.isDynamic = false
-//            obstacle.physicsBody?.categoryBitMask = obstacleCategory
-//        }
-//    }
-//    
-//    func setupCamera() {
-//        cameraNode = SKCameraNode()
-//        camera = cameraNode
-//        addChild(cameraNode)
-//    }
-//    
-//    override func update(_ currentTime: TimeInterval) {
-//        cameraNode.position = CGPoint(x: player.position.x + 200, y: 0)
-//        updateGround()
-//        updateObstacles()
-//    }
-//    
-//    func updateGround() {
-//        for ground in groundNodes {
-//            if ground.position.x < player.position.x - ground.size.width {
-//                ground.position.x += ground.size.width * CGFloat(groundNodes.count)
-//            }
-//        }
-//    }
-//    
-//    func updateObstacles() {
-//        for obstacle in obstacles {
-//            if obstacle.position.x < player.position.x - 600 {
-//                repositionObstacle(obstacle)
-//            }
-//        }
-//    }
-//    
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        if player.physicsBody?.velocity.dy == 0 {
-//            player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 350))
-//        }
-//    }
-//    
-//    func repositionObstacle(_ obstacle: SKSpriteNode) {
-//        obstacle.position.x = player.position.x + CGFloat.random(in: 600...1000)
-//    }
-//    
-//    func didBegin(_ contact: SKPhysicsContact) {
-//        if (contact.bodyA.categoryBitMask == playerCategory && contact.bodyB.categoryBitMask == obstacleCategory) ||
-//           (contact.bodyB.categoryBitMask == playerCategory && contact.bodyA.categoryBitMask == obstacleCategory) {
-//            gameOver()
-//        }
-//    }
-//    
-//    func gameOver() {
-//        print("💀 اللاعب مات!")
-//        player.removeAllActions()
-//        player.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-//    }
-//}
-//
-//
-//
-
-
-//run run
-////
-//import SpriteKit
-//
-//class GameScene: SKScene, SKPhysicsContactDelegate {
-//    
-//    var player: SKSpriteNode!
-//    var cameraNode: SKCameraNode!
-//    var obstacles: [SKSpriteNode] = []
-//    var groundNodes: [SKSpriteNode] = []
-//    
-//    let playerCategory: UInt32 = 0x1 << 0
-//    let obstacleCategory: UInt32 = 0x1 << 1
-//    let groundCategory: UInt32 = 0x1 << 2
-//    
-//    override func didMove(to view: SKView) {
-//        // البحث عن اللاعب
-//        player = childNode(withName: "player") as? SKSpriteNode
-//        guard let player = player else { return }
-//        
-//        // إعداد الفيزياء
-//        physicsWorld.contactDelegate = self
-//        
-//        // إعداد اللاعب
-//        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
-//        player.physicsBody?.affectedByGravity = true
-//        player.physicsBody?.allowsRotation = false
-//        player.physicsBody?.categoryBitMask = playerCategory
-//        player.physicsBody?.contactTestBitMask = obstacleCategory | groundCategory
-//        player.physicsBody?.collisionBitMask = obstacleCategory | groundCategory
-//        
-//        // تشغيل حركة الجري
-//        startRunningAnimation()
-//        
-//        // إعداد الأرضية المتكررة
-//        setupGround()
-//        
-//        // إعداد العقبات
-//        obstacles = self.children.compactMap { $0 as? SKSpriteNode }.filter { $0.name == "grass" || $0.name == "rock" }
-//        for obstacle in obstacles {
-//            obstacle.physicsBody = SKPhysicsBody(rectangleOf: obstacle.size)
-//            obstacle.physicsBody?.isDynamic = false
-//            obstacle.physicsBody?.categoryBitMask = obstacleCategory
-//        }
-//        
-//        // حركة اللاعب المستمرة للأمام
-//        let moveForward = SKAction.moveBy(x: 500, y: 0, duration: 5)
-//        let repeatForever = SKAction.repeatForever(moveForward)
-//        player.run(repeatForever)
-//        
-//        // إضافة كاميرا تتبع اللاعب
-//        cameraNode = SKCameraNode()
-//        camera = cameraNode
-//        addChild(cameraNode)
-//    }
-//    
-//    func startRunningAnimation() {
-//        let texture1 = SKTexture(imageNamed: "run1.png")
-//        let texture2 = SKTexture(imageNamed: "run2.png")
-//        
-//        let animation = SKAction.animate(with: [texture1, texture2], timePerFrame: 0.1)
-//        let repeatAnimation = SKAction.repeatForever(animation)
-//        
-//        player.run(repeatAnimation)
-//    }
-//    
-//    func setupGround() {
-//        if let ground = childNode(withName: "ground") as? SKSpriteNode {
-//            groundNodes.append(ground)
-//            
-//            for i in 1...2 {
-//                let newGround = ground.copy() as! SKSpriteNode
-//                newGround.position.x = ground.position.x + ground.size.width * CGFloat(i)
-//                addChild(newGround)
-//                groundNodes.append(newGround)
-//            }
-//            
-//            for ground in groundNodes {
-//                ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
-//                ground.physicsBody?.isDynamic = false
-//                ground.physicsBody?.categoryBitMask = groundCategory
-//            }
-//        }
-//    }
-//    
-//    override func update(_ currentTime: TimeInterval) {
-//        cameraNode.position = CGPoint(x: player.position.x + 200, y: 0)
-//        
-//        for ground in groundNodes {
-//            if ground.position.x < player.position.x - ground.size.width {
-//                ground.position.x += ground.size.width * CGFloat(groundNodes.count)
-//            }
-//        }
-//        
-//        for obstacle in obstacles {
-//            if obstacle.position.x < player.position.x - 600 {
-//                repositionObstacle(obstacle)
-//            }
-//        }
-//    }
-//
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let player = player else { return }
-//        
-//        if player.physicsBody?.velocity.dy == 0 {
-//            player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 350))
-//        }
-//    }
-//    
-//    func repositionObstacle(_ obstacle: SKSpriteNode) {
-//        let newX = player.position.x + CGFloat.random(in: 600...1000)
-//        obstacle.position.x = newX
-//    }
-//    
-//    func didBegin(_ contact: SKPhysicsContact) {
-//        if (contact.bodyA.categoryBitMask == playerCategory && contact.bodyB.categoryBitMask == obstacleCategory) ||
-//           (contact.bodyB.categoryBitMask == playerCategory && contact.bodyA.categoryBitMask == obstacleCategory) {
-//            gameOver()
-//        }
-//    }
-//    
-//    func gameOver() {
-//        print("💀 اللاعب مات!")
-//        player.removeAllActions()
-//        player.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-//    }
-//}
-//
-//
-//
-//
-//// run good
 import SpriteKit
+import GameplayKit
+//استيراد مكتبات للصوت
+import Speech
+import AVFoundation
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var player: SKSpriteNode!
-    var cameraNode: SKCameraNode!
     var obstacles: [SKSpriteNode] = []
     var groundNodes: [SKSpriteNode] = []
-    var backgroundNodes: [SKSpriteNode] = [] // مصفوفة الخلفيات
-
+    var backgroundNodes: [SKSpriteNode] = []
+    var coins: [SKSpriteNode] = []
+    
+    var coinCount = 0
+    var coinImage: SKSpriteNode!
+    var coinCountLabel: SKLabelNode!
+    
+    var gameOverLabel: SKLabelNode!
+    var isGameOver = false
+    
     let playerCategory: UInt32 = 0x1 << 0
     let obstacleCategory: UInt32 = 0x1 << 1
     let groundCategory: UInt32 = 0x1 << 2
+    let coinCategory: UInt32 = 0x1 << 3
     
-    override func didMove(to view: SKView) {
-        player = childNode(withName: "player") as? SKSpriteNode
+    // متغيرات الصوت
+    // بدلاً من:
+    // let audioEngine = AVAudioEngine()
+    // var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    // var speechRecognizer: SFSpeechRecognizer?
+
+    // استخدم أسماء فريدة:
+    let voiceAudioEngine = AVAudioEngine() // غير audioEngine إلى voiceAudioEngine
+    var voiceRecognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    var voiceSpeechRecognizer: SFSpeechRecognizer?
+    
+    //
+    
+    var camel: SKSpriteNode!
+    var homeNode: SKSpriteNode!
+    
+    var speedIncreaseTimer: TimeInterval = 0
+    var currentSpeed: CGFloat = 3.0
+    
+    let homeIcon = SKSpriteNode(imageNamed: "homeIcon")
+    let retry = SKSpriteNode(imageNamed: "retrry")
+    
+    func jump() {
         guard let player = player else { return }
         
+        // التأكد من أن اللاعب على الأرض (يمكنه القفز)
+        if player.physicsBody?.velocity.dy == 0 {
+            let jumpForce: CGFloat = 300 // قوة القفز
+            player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: jumpForce))
+            print("✅ قفز اللاعب!")
+        }
+    }
+
+    override func didMove(to view: SKView) {
+        player = childNode(withName: "player") as? SKSpriteNode
+        guard player != nil else { return }
+
+        coinCount = 0
         physicsWorld.contactDelegate = self
-        
+        physicsWorld.gravity = CGVector(dx: 0, dy: -20)
         setupPlayer()
+        setupCamel()
         startRunningAnimation()
         setupGround()
-        setupObstacles()
-        setupBackground() // إعداد الخلفية
+        setupBackground()
+        setupCoinImage()
+        setupCoinCountLabel()
+        setupHomeNode()
         
-        let moveForward = SKAction.moveBy(x: 500, y: 0, duration: 5)
-        let repeatForever = SKAction.repeatForever(moveForward)
-        player.run(repeatForever)
+        // بدء الاستماع للأوامر الصوتية
+           startListening()
         
-        setupCamera()
+        let obstacleWaitAction = SKAction.wait(forDuration: 8.0)
+        let coinWaitAction = SKAction.wait(forDuration: 1.0)
+        
+        let spawnObstacleAction = SKAction.run { [weak self] in
+            self?.spawnObstacle()
+        }
+        let spawnCoinAction = SKAction.run { [weak self] in
+            self?.spawnCoin()
+        }
+        
+        let obstacleSequence = SKAction.sequence([spawnObstacleAction, obstacleWaitAction])
+        let coinSequence = SKAction.sequence([spawnCoinAction, coinWaitAction])
+        
+        run(SKAction.repeatForever(obstacleSequence))
+        run(SKAction.repeatForever(coinSequence))
+        
+    }
+    
+ 
+       
+    func startListening() {
+          SFSpeechRecognizer.requestAuthorization { status in
+              if status == .authorized {
+                  DispatchQueue.main.async {
+                      self.setupAudioRecognition()
+                  }
+              }
+          }
+      }
+      
+    func setupAudioRecognition() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            let node = self.voiceAudioEngine.inputNode
+            let recordingFormat = node.outputFormat(forBus: 0)
+            
+            self.voiceRecognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+            guard let recognitionRequest = self.voiceRecognitionRequest else { return }
+            
+            node.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+                recognitionRequest.append(buffer)
+            }
+            
+            self.voiceAudioEngine.prepare()
+            try self.voiceAudioEngine.start()
+            
+            self.voiceSpeechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "ar-SA"))
+            
+            self.voiceSpeechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
+                if let error = error {
+                    print("خطأ في التعرف: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let result = result else { return }
+                
+                let text = result.bestTranscription.formattedString.lowercased()
+                print("الكلمة المُكتشفة: \(text)")
+                
+                if text.contains("اقفز") {
+                    DispatchQueue.main.async {
+                        self.jump()
+                    }
+                }
+            }
+        } catch {
+            print("خطأ في الإعداد: \(error.localizedDescription)")
+        }
+    }
+      
+      func stopListening() {
+          self.voiceAudioEngine.stop()
+          self.voiceRecognitionRequest?.endAudio()
+          self.voiceAudioEngine.inputNode.removeTap(onBus: 0)
+          try? AVAudioSession.sharedInstance().setActive(false)
+      }
+      
+      deinit {
+          stopListening()
+      }
+    override func update(_ currentTime: TimeInterval) {
+        if isGameOver { return }
+        
+        speedIncreaseTimer += 1 / 60 // زيادة المؤقت بناءً على معدل الإطارات (60 إطارًا في الثانية)
+        
+        if speedIncreaseTimer >= 10 {
+            speedIncreaseTimer = 0
+            increaseSpeed()
+        }
+    }
+    
+    func increaseSpeed() {
+        currentSpeed *= 0.9 // زيادة السرعة (تقليل المدة يجعل الحركة أسرع)
+        
+        // تحديث سرعة العقبات
+        for obstacle in obstacles {
+            obstacle.removeAllActions()
+            let moveAction = SKAction.moveBy(x: -1000, y: 0, duration: currentSpeed)
+            let disappearAction = SKAction.removeFromParent()
+            obstacle.run(SKAction.sequence([moveAction, disappearAction]))
+        }
+        
+        // تحديث سرعة اللاعب (إذا كنت تريد زيادة سرعة اللاعب)
+        player.removeAllActions()
+        let runningAnimation = SKAction.animate(with: [SKTexture(imageNamed: "run1.png"), SKTexture(imageNamed: "run2.png"), SKTexture(imageNamed: "run3.png")], timePerFrame: 0.1)
+        let repeatAnimation = SKAction.repeatForever(runningAnimation)
+        player.run(repeatAnimation)
+    }
+    
+    func setupCamel() {
+        camel = SKSpriteNode(imageNamed: "player22")
+        camel.position = CGPoint(x: player.position.x - 160, y: player.position.y + 20)
+        camel.size = CGSize(width: 200, height: 150)
+        camel.zPosition = 1
+        addChild(camel)
+        startCamelAnimation()
+    }
+    
+    func setupCoinImage() {
+        coinImage = SKSpriteNode(imageNamed: "coins")
+        coinImage.size = CGSize(width: 30, height: 30)
+        coinImage.position = CGPoint(x: frame.minX + 600, y: frame.maxY - 40)
+        addChild(coinImage)
+    }
+    
+    
+    func setupCoinCountLabel() {
+        coinCountLabel = SKLabelNode(fontNamed: "Arial")
+        coinCountLabel.fontSize = 24
+        coinCountLabel.fontColor = .white
+        coinCountLabel.position = CGPoint(x: coinImage.position.x - 30, y: coinImage.position.y - 10)
+        coinCountLabel.text = convertToArabicNumerals(coinCount)
+        addChild(coinCountLabel)
+    }
+    
+    func setupHomeNode() {
+        let homeTexture = SKTexture(imageNamed: "Home")
+        homeNode = SKSpriteNode(texture: homeTexture, size: CGSize(width: 227.744, height: 319.812))
+        homeNode.position = CGPoint(x: frame.maxX - 66, y: frame.midY)
+        homeNode.isHidden = true
+        homeNode.zPosition = 2
+        addChild(homeNode)
+    }
+    
+    func startCamelAnimation() {
+        let camelTexture1 = SKTexture(imageNamed: "player22")
+        let camelTexture2 = SKTexture(imageNamed: "player222")
+        
+        let animation = SKAction.animate(with: [camelTexture1, camelTexture2], timePerFrame: 0.2)
+        let repeatAnimation = SKAction.repeatForever(animation)
+        camel.run(repeatAnimation)
     }
     
     func setupPlayer() {
@@ -588,18 +236,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.physicsBody?.affectedByGravity = true
         player.physicsBody?.allowsRotation = false
         player.physicsBody?.categoryBitMask = playerCategory
-        player.physicsBody?.contactTestBitMask = obstacleCategory | groundCategory
+        player.physicsBody?.contactTestBitMask = obstacleCategory | groundCategory | coinCategory
         player.physicsBody?.collisionBitMask = obstacleCategory | groundCategory
+        player.zPosition = 1
     }
     
     func startRunningAnimation() {
         let texture1 = SKTexture(imageNamed: "run1.png")
         let texture2 = SKTexture(imageNamed: "run2.png")
         let texture3 = SKTexture(imageNamed: "run3.png")
-
+        
         let animation = SKAction.animate(with: [texture1, texture2, texture3], timePerFrame: 0.1)
         let repeatAnimation = SKAction.repeatForever(animation)
-        
         player.run(repeatAnimation)
     }
     
@@ -618,93 +266,324 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
                 ground.physicsBody?.isDynamic = false
                 ground.physicsBody?.categoryBitMask = groundCategory
+                ground.zPosition = -1
+            }
+            
+            // سرعة ثابتة للأرض (بدون تأثر بـ currentSpeed)
+            let moveAction = SKAction.moveBy(x: -ground.size.width, y: 0, duration: 5.0) // سرعة ثابتة
+            let resetAction = SKAction.run { [weak self] in
+                guard let self = self else { return }
+                for ground in self.groundNodes {
+                    if ground.position.x + ground.size.width < 0 {
+                        ground.position.x += ground.size.width * CGFloat(self.groundNodes.count)
+                    }
+                }
+            }
+            let sequence = SKAction.sequence([moveAction, resetAction])
+            let repeatAction = SKAction.repeatForever(sequence)
+            
+            for ground in groundNodes {
+                ground.run(repeatAction)
             }
         }
     }
     
     func setupBackground() {
         if let background = childNode(withName: "background") as? SKSpriteNode {
-            background.zPosition = -1
-            background.size = CGSize(width: self.size.width * 1.4, height: self.size.height)  // تكبير الخلفية لتغطية الكاميرا
-
+            background.zPosition = -2
             backgroundNodes.append(background)
             
             for i in 1...2 {
                 let newBackground = background.copy() as! SKSpriteNode
                 newBackground.position.x = background.position.x + background.size.width * CGFloat(i)
-                newBackground.zPosition = -1
+                newBackground.zPosition = -2
                 addChild(newBackground)
                 backgroundNodes.append(newBackground)
             }
+            
+            // سرعة ثابتة للخلفية (بدون تأثر بـ currentSpeed)
+            let moveAction = SKAction.moveBy(x: -background.size.width, y: 0, duration: 5.0) // سرعة ثابتة
+            let resetAction = SKAction.run { [weak self] in
+                guard let self = self else { return }
+                for background in self.backgroundNodes {
+                    if background.position.x + background.size.width < 0 {
+                        background.position.x += background.size.width * CGFloat(self.backgroundNodes.count)
+                    }
+                }
+            }
+            let sequence = SKAction.sequence([moveAction, resetAction])
+            let repeatAction = SKAction.repeatForever(sequence)
+            
+            for background in backgroundNodes {
+                background.run(repeatAction)
+            }
         }
     }
     
-    func setupObstacles() {
-        obstacles = self.children.compactMap { $0 as? SKSpriteNode }.filter { $0.name == "grass" || $0.name == "rock" }
-        for obstacle in obstacles {
-            obstacle.physicsBody = SKPhysicsBody(rectangleOf: obstacle.size)
-            obstacle.physicsBody?.isDynamic = false
-            obstacle.physicsBody?.categoryBitMask = obstacleCategory
-        }
-    }
+    func spawnCoin() {
+          let coin = SKSpriteNode(imageNamed: "coins")
+          coin.size = CGSize(width: 30, height: 30)
+          coin.name = "coins"
+          
+          let randomY = GKRandomDistribution(lowestValue: -120, highestValue: 100)
+          coin.position = CGPoint(x: frame.size.width + coin.size.width, y: CGFloat(randomY.nextInt()))
+          
+          let move = SKAction.moveBy(x: -1000, y: 0, duration: currentSpeed)
+          let disappear = SKAction.removeFromParent()
+          
+          coin.physicsBody = SKPhysicsBody(circleOfRadius: coin.size.width / 4)
+          coin.physicsBody?.affectedByGravity = false
+          coin.physicsBody?.isDynamic = false
+          coin.physicsBody?.categoryBitMask = coinCategory
+          coin.zPosition = 1
+          
+          coin.run(SKAction.sequence([move, disappear]))
+          addChild(coin)
+          coins.append(coin)
+      }
+      
     
-    func setupCamera() {
-        cameraNode = SKCameraNode()
-        camera = cameraNode
-        addChild(cameraNode)
-        if let player = player {
-               cameraNode.position = CGPoint(x: player.position.x + 200, y: 0)
-           }
-    }
-   
-    
-    
-    
-    override func update(_ currentTime: TimeInterval) {
-        cameraNode.position = CGPoint(x: player.position.x + 200, y: 0)
+    func spawnObstacle() {
+        let obstacleTypes = ["grass", "rock"]
+        let randomType = obstacleTypes.randomElement()!
         
-        for ground in groundNodes {
-            if ground.position.x < player.position.x - ground.size.width {
-                ground.position.x += ground.size.width * CGFloat(groundNodes.count)
-            }
-        }
-
-        for background in backgroundNodes {
-            if background.position.x < player.position.x - background.size.width {
-                background.position.x += background.size.width * CGFloat(backgroundNodes.count)
-            }
+        let randomX = GKRandomDistribution(lowestValue: 300, highestValue: 400)
+        let move = SKAction.moveBy(x: -1000, y: 0, duration: currentSpeed)
+        let disappear = SKAction.removeFromParent()
+        
+        let obstacle = SKSpriteNode(imageNamed: randomType)
+        obstacle.size = CGSize(width: 32, height: 32)
+        obstacle.name = randomType
+        
+        if let ground = groundNodes.first {
+            let groundTopY = ground.position.y + (ground.size.height / 3)
+            let obstacleY = groundTopY + (obstacle.size.height / 3)
+            obstacle.position = CGPoint(x: randomX.nextInt(), y: Int(obstacleY))
         }
         
-        for obstacle in obstacles {
-            if obstacle.position.x < player.position.x - 600 {
-                repositionObstacle(obstacle)
-            }
-        }
+        obstacle.physicsBody = SKPhysicsBody(rectangleOf: obstacle.size)
+        obstacle.physicsBody?.affectedByGravity = false
+        obstacle.physicsBody?.isDynamic = false
+        obstacle.physicsBody?.categoryBitMask = obstacleCategory
+        obstacle.zPosition = 1
+        
+        obstacle.run(SKAction.sequence([move, disappear]))
+        addChild(obstacle)
+        obstacles.append(obstacle)
     }
+    
+    
 
+
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let player = player else { return }
-        
-        if player.physicsBody?.velocity.dy == 0 {
-            player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 350))
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        let touchedNodes = self.nodes(at: location)
+
+        for node in touchedNodes {
+            if node.name == "homeIcon" {
+                goToHomeScene()
+                return
+            }
+            if node.name == "retry" {
+                restartGame()
+                return
+            }
+                        
         }
+
+        guard let player = player else { return }
+             if isGameOver { return }
+             if player.physicsBody?.velocity.dy == 0 {
+                 let maxJumpVelocity: CGFloat = 300
+                 let jumpVelocity = min(320, maxJumpVelocity)
+                 player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: jumpVelocity))
+             }
     }
-    
-    func repositionObstacle(_ obstacle: SKSpriteNode) {
-        let newX = player.position.x + CGFloat.random(in: 600...1000)
-        obstacle.position.x = newX
+
+
+    func convertToArabicNumerals(_ number: Int) -> String {
+        let arabicDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
+        let numberString = String(number) // تحويل الرقم إلى نص
+        var arabicNumber = ""
+        
+        for digit in numberString {
+            if let digitInt = Int(String(digit)) {
+                arabicNumber.append(arabicDigits[digitInt]) // استبدال الرقم بالرقم العربي
+            } else {
+                arabicNumber.append(digit) // في حالة وجود أي رموز أخرى تبقى كما هي
+            }
+        }
+        
+        return arabicNumber
     }
-    
+
     func didBegin(_ contact: SKPhysicsContact) {
         if (contact.bodyA.categoryBitMask == playerCategory && contact.bodyB.categoryBitMask == obstacleCategory) ||
-           (contact.bodyB.categoryBitMask == playerCategory && contact.bodyA.categoryBitMask == obstacleCategory) {
+            (contact.bodyB.categoryBitMask == playerCategory && contact.bodyA.categoryBitMask == obstacleCategory) {
+            
             gameOver()
+        } else if (contact.bodyA.categoryBitMask == playerCategory && contact.bodyB.categoryBitMask == coinCategory) ||
+                    (contact.bodyB.categoryBitMask == playerCategory && contact.bodyA.categoryBitMask == coinCategory) {
+            
+            if contact.bodyA.categoryBitMask == coinCategory {
+                contact.bodyA.node?.removeFromParent()
+                coinCount += 1
+            } else {
+                contact.bodyB.node?.removeFromParent()
+                coinCount += 1
+            }
+            coinCountLabel.text = convertToArabicNumerals(coinCount)
+
+            if coinCount >= 20 {
+                homeNode.isHidden = false
+                winGame()
+            }
         }
     }
     
-    func gameOver() {
-        print("💀 اللاعب مات!")
-        player.removeAllActions()
-        player.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+    func restartGame() {
+        if let scene = GameScene(fileNamed: "GameScene") {
+            scene.scaleMode = .aspectFill
+            self.view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.5))
+        }
     }
-}
+    
+    
+   func goToHomeScene() {
+      if let homeScene = SKScene(fileNamed: "homepage") {
+          homeScene.scaleMode = .aspectFill
+        self.view?.presentScene(homeScene, transition: SKTransition.fade(withDuration: 0.2))
+ }
+                }
+    
+    func gameOver() {
+        if isGameOver { return }
+        
+        let blurNode = SKEffectNode()
+        let blurFilter = CIFilter(name: "CIGaussianBlur")
+        
+        blurFilter?.setValue(10.0, forKey: kCIInputRadiusKey)
+        
+        blurNode.filter = blurFilter
+        blurNode.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
+        blurNode.zPosition = 5
+        
+         blurNode.blendMode = .alpha
+        let blurredBackground = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.4), size: self.size)
+         blurredBackground.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
+        
+        blurredBackground.zPosition = 5
+        
+         blurNode.addChild(blurredBackground)
+        self.addChild(blurNode)
+            
+            let winImage = SKSpriteNode(imageNamed: "recMap loss")
+            winImage.size = CGSize(width: 300, height: 200)
+            winImage.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
+            winImage.zPosition = 6
+            self.addChild(winImage)
+        
+        
+        retry.name = "retry"
+        retry.size = CGSize(width: 25, height: 25)
+        retry.position = CGPoint(x: -40, y:-50)
+        retry.zPosition = 7
+        self.addChild(retry)
+        
+        homeIcon.name = "homeIcon"
+        homeIcon.size = CGSize(width: 30, height: 30)
+        homeIcon.position = CGPoint(x: 40, y:-50)
+        homeIcon.zPosition = 7
+        self.addChild(homeIcon)
+          
+        isGameOver = true
+        self.isPaused = true
+        CoinStorageHelper.shared.saveCoinCount(self.coinCount)
+        print("✅ حفظ الكوينز: \(self.coinCount)")
+        
+    }
+    
+
+    func winGame() {
+        if isGameOver { return }
+        
+        for ground in groundNodes {
+            ground.removeAllActions()
+        }
+        for background in backgroundNodes {
+            background.removeAllActions()
+        }
+        
+        for obstacle in obstacles {
+            obstacle.removeAllActions()
+            obstacle.physicsBody = nil
+        }
+        for coin in coins {
+            coin.removeAllActions()
+        }
+        
+        for obstacle in obstacles {
+            obstacle.isHidden = true
+        }
+        for coin in coins {
+            coin.isHidden = true
+        }
+        
+        self.removeAllActions()
+        
+        player.physicsBody?.affectedByGravity = false
+        player.physicsBody?.velocity.dy = 0
+        camel.removeAllActions()
+        
+        if let ground = groundNodes.first {
+            let groundTopY = ground.position.y + (ground.size.height / 2)
+            let moveToGround = SKAction.move(to: CGPoint(x: player.position.x, y: groundTopY + (player.size.height / 2)), duration: 0.5)
+            player.run(moveToGround) {
+                let waitAction = SKAction.wait(forDuration: 0.5)
+                let moveToHome = SKAction.move(to: CGPoint(x: self.homeNode.position.x - 100, y: self.player.position.y), duration: 3.0)
+                let sequence = SKAction.sequence([waitAction, moveToHome])
+                
+                self.player.run(sequence) {
+                             let blurNode = SKEffectNode()
+                             let blurFilter = CIFilter(name: "CIGaussianBlur")
+                             blurFilter?.setValue(10.0, forKey: kCIInputRadiusKey) // تحديد درجة البلور
+                             blurNode.filter = blurFilter
+                             blurNode.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
+                             blurNode.zPosition = 5
+                             blurNode.blendMode = .alpha
+
+                             // إضافة صورة للخلفية مع البلور
+                             let blurredBackground = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.4), size: self.size)
+                             blurredBackground.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
+                             blurredBackground.zPosition = 5
+                    
+                             blurNode.addChild(blurredBackground)
+                             self.addChild(blurNode)
+                    
+                    CoinStorageHelper.shared.saveCoinCount(self.coinCount)
+                    print("✅ حفظ الكوينز: \(self.coinCount)")
+                    
+                    let winImage = SKSpriteNode(imageNamed: "recMap Win")
+                    winImage.size = CGSize(width: 300, height: 200)
+                    winImage.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
+                    winImage.zPosition = 6
+                    self.addChild(winImage)
+                   
+                    self.homeIcon.name = "homeIcon"
+                                 self.homeIcon.size = CGSize(width: 30, height: 30)
+                                 self.homeIcon.position = CGPoint(x: 0, y: -50)
+                                 self.homeIcon.zPosition = 7
+                                 self.addChild(self.homeIcon)
+                    
+                    self.isGameOver = true
+                    self.isPaused = true
+                }
+            }
+        }
+        
+        isGameOver = true
+        
+    }}
+
